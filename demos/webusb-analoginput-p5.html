@@ -87,19 +87,21 @@
         <script>
         let slider = document.getElementById("slider");
 function setup(){
-  var mycanvas = createCanvas(710, 400, WEBGL);
+  var mycanvas = createCanvas(710, 400);
   mycanvas.parent('canvasholder');
+  fill(255,153,255);
+    noStroke();
 }
 
 function draw(){
     background(250);
     let sval = slider.value;
 
-    normalMaterial();
-    rotateZ(sval * 0.01);
-    rotateX(sval * 0.01);
-    rotateY(sval * 0.01);
-    box(70, 70, 70);
+    //normalMaterial();
+    //rotateZ(sval * 0.01);
+    //rotateX(sval * 0.01);
+    //rotateY(sval * 0.01);
+    ellipse(width/2, height/2, sval/10, sval/10);
 
 }
 
