@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WebUSB + Flocking.js</title>
+        <script src="serial.js"></script>
+        <script src="flocking-all.min.js"></script>
+        <script>
+
+(function() {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', event => {
+        let connectButton = document.querySelector("#connect");
+        let statusDisplay = document.querySelector('#status');
+        let port = null;
+
+        let slider = document.getElementById("slider");
+        let sensorstringdiv = document.getElementById("sensorstring");
+
+        let encoder = new TextEncoder()
+
+        function connect() {
+            synth.play()
+
+            port.connect().then(() => {
+                statusDisplay.textContent = '';
+                connectButton.textContent = 'Disconnect';
+
+                port.onReceive = data => {
+                    let textDecoder = new TextDecoder();
+                    let sensorstring = textDecoder.decode(data);
+                    sensorstringdiv.innerHTML = parseInt(sensorstring);
+                    slider.value = parseInt(sensorstring);
+
+                    synth.set("granny.freq.freq", parseInt(sensorstring));
+
+                }
+                port.onReceiveError = error => {
+                    console.error(error);
+                };
+            }, error => {
+                statusDisplay.textContent = error;
+            });
+        }
+
+        connectButton.addEventListener('click', function() {
+            if (port !== null) {
+                synth.pause()
+
+                port.disconnect();
+                connectButton.textContent = 'Connect';
+                statusDisplay.textContent = '';
+                port = null; // why set this to null? 
+            } else {
+                serial.requestPort().then(selectedPort => {
+                    port = selectedPort;
+                    connect();
+                }).catch(error => {
+                    statusDisplay.textContent = error;
+                });
+            }
+        });
+
+        serial.getPorts().then(ports => {
+            if (ports.length == 0) {
+                statusDisplay.textContent = 'No device found.';
+            } else {
+                statusDisplay.textContent = 'Connecting...';
+                port = ports[0];
+                connect();
+            }
+        });
+
+
+        var synth = flock.synth({
+            synthDef: {
+                ugen: "flock.ugen.scope",
+                source: {
+                    id: "granny",
+                    ugen: "flock.ugen.sinOsc",
+                    freq: {
+                        ugen: "flock.ugen.sinOsc",
+                        freq: 100,
+                        mul: 500,
+                        add: 900
+                    },
+                    mul: {
+                        ugen: "flock.ugen.sinOsc",
+                        mul: 0.3,
+                        add: 0.3,
+                        freq: 1
+                    }                
+                },
+                options: {
+                    canvas: "#gfx",
+                    styles: {
+                        strokeColor: "#777777",
+                        strokeWidth: 2
+                    }
+                }
+            }
+        });
+
+
+    });
+})();
+	</script>
+    </head>
+    <body>
+        <button id="connect">Connect</button>
+        <span id="status"></span>
+
+        <input type="range" id="slider" min="0" max="1024">
+        <span id="sensorstring"></span>
+        <canvas id="gfx" height="300" style="border:1px solid #000000;"></canvas>
+        <script>
+            let myscope = document.getElementById("gfx");
+            myscope.width = document.body.clientWidth;
+        </script>
+    </body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Console</title>
+        <script src="serial.js"></script>
+        <!--script src="node_modules/browserify-johnny-five/build/browserify-johnny-five.js"></script-->
+        <script>
+
+(function() {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', event => {
+        let connectButton = document.querySelector("#connect");
+        let statusDisplay = document.querySelector('#status');
+        let port = null;
+
+        let slider = document.getElementById("slider");
+        let sensorstringdiv = document.getElementById("sensorstring");
+
+        let encoder = new TextEncoder()
+
+        function connect() {
+            port.connect().then(() => {
+                statusDisplay.textContent = '';
+                connectButton.textContent = 'Disconnect';
+
+                port.onReceive = data => {
+                    let textDecoder = new TextDecoder();
+
+                    //console.log(data);
+                    //console.log(data.getUint8());
+                    //console.log(textDecoder.decode(data));
+                    let sensorstring = textDecoder.decode(data);
+                    sensorstringdiv.innerHTML = parseInt(sensorstring);
+                    slider.value = parseInt(sensorstring);
+                }
+                port.onReceiveError = error => {
+                    console.error(error);
+                };
+            }, error => {
+                statusDisplay.textContent = error;
+            });
+        }
+
+        connectButton.addEventListener('click', function() {
+            if (port !== null) {
+                port.disconnect();
+                connectButton.textContent = 'Connect';
+                statusDisplay.textContent = '';
+                port = null; // why set this to null? 
+            } else {
+                serial.requestPort().then(selectedPort => {
+                    port = selectedPort;
+                    connect();
+                }).catch(error => {
+                    statusDisplay.textContent = error;
+                });
+            }
+        });
+
+        serial.getPorts().then(ports => {
+            if (ports.length == 0) {
+                statusDisplay.textContent = 'No device found.';
+            } else {
+                statusDisplay.textContent = 'Connecting...';
+                port = ports[0];
+                connect();
+            }
+        });
+    });
+})();
+	</script>
+    </head>
+    <body>
+        <button id="connect">Connect</button>
+        <span id="status"></span>
+
+        <input type="range" id="slider" min="0" max="1024">
+        <div id="sensorstring"></div>
+    </body>
+</html>
